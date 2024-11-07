@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebGL Rain Effect</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: black;
+        }
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="glCanvas"></canvas>
+    <script>
+        const canvas = document.getElementById('glCanvas');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        
+        const gl = canvas.getContext('2d'); // 변경: webgl -> 2d로 수정하여 기본적인 캔버스 사용
+        if (!gl) {
+            console.error('Canvas 2D 컨텍스트를 사용할 수 없습니다. 브라우저가 지원하지 않습니다.');
+        }
+
+        // 파티클 시스템 정의
+        const maxParticles = 500;
+        const particles = [];
+
+        class Particle {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.vx = (Math.random() - 0.5) * 2;
+                this.vy = Math.random() * -4 - 2;
+                this.alpha = 1.0;
+                this.text = "비"; // "비" 텍스트 추가
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vy += 0.05; // 중력 효과
+
+                // 바닥에 닿았을 때 흩뿌려지는 효과
+                if (this.y > canvas.height) {
+                    this.vy *= -0.3;
+                    this.vx *= 0.7;
+                    this.y = canvas.height;
+                    this.alpha -= 0.02;
+                }
+            }
+
+            isAlive() {
+                return this.alpha > 0;
+            }
+        }
+
+        function addParticle() {
+            // 비 텍스트에서 파티클 추가
+            const x = Math.random() * canvas.width;
+            const y = Math.random() * -50;
+            particles.push(new Particle(x, y));
+        }
+
+        function updateParticles() {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                particles[i].update();
+                if (!particles[i].isAlive()) {
+                    particles.splice(i, 1);
+                }
+            }
+        }
+
+        function drawParticles() {
+            gl.clearRect(0, 0, canvas.width, canvas.height); // 변경: WebGL 메서드 대신 2D 캔버스 메서드 사용
+            gl.fillStyle = 'black';
+            gl.fillRect(0, 0, canvas.width, canvas.height);
+            
+            particles.forEach(particle => {
+                gl.fillStyle = `rgba(255, 255, 255, ${particle.alpha})`;
+                gl.font = '20px Arial'; // 폰트 설정
+                gl.fillText(particle.text, particle.x, particle.y); // "비" 텍스트 그리기
+            });
+        }
+
+        function render() {
+            addParticle();
+            updateParticles();
+            drawParticles();
+            requestAnimationFrame(render);
+        }
+
+        render();
+    </script>
+</body>
+</html>
